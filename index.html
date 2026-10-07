@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Точный прогресс-бар</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0f172a;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: #e2e8f0;
+  }
+  .wrap {
+    width: min(700px, 92vw);
+    padding: 28px;
+    background: #1e293b;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 18px;
+    letter-spacing: .3px;
+    color: #94a3b8;
+  }
+  .bar {
+    position: relative;
+    height: 34px;
+    background: #0f172a;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #334155;
+  }
+  .fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #22d3ee, #3b82f6, #8b5cf6);
+    border-radius: 10px 0 0 10px;
+    transition: width .05s linear;
+    box-shadow: 0 0 18px rgba(59,130,246,.55);
+  }
+  .pct {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 15px;
+    text-shadow: 0 1px 3px rgba(0,0,0,.8);
+    pointer-events: none;
+  }
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 14px;
+    font-size: 13px;
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+  }
+  .meta b { color: #cbd5e1; font-weight: 600; }
+  .status {
+    margin-top: 18px;
+    font-size: 14px;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #94a3b8;
+    border: 1px solid #334155;
+  }
+  .status.done { color: #4ade80; border-color: #166534; }
+  .status.wait { color: #fbbf24; border-color: #78350f; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Прогресс</h1>
+
+  <div class="bar">
+    <div class="fill" id="fill"></div>
+    <div class="pct" id="pct">0.00%</div>
+  </div>
+
+  <div class="meta">
+    <span>Начало: <b id="startLbl">—</b></span>
+    <span>Конец: <b id="endLbl">—</b></span>
+  </div>
+
+  <div class="status" id="status">Ожидание…</div>
+</div>
+
+<script>
+/* ====== ЗАДАЙ ДАТЫ ЗДЕСЬ (точность до минут) ====== */
+const START = "2026-10-07T09:00";
+const END   = "2026-10-10T14:00";
+/* ================================================= */
+
+const start = new Date(START).getTime();
+const end   = new Date(END).getTime();
+const total = end - start;
+
+const $fill   = document.getElementById('fill');
+const $pct    = document.getElementById('pct');
+const $status = document.getElementById('status');
+
+const fmt = t => new Date(t).toLocaleString('ru-RU', {
+  day:'2-digit', month:'2-digit', year:'numeric',
+  hour:'2-digit', minute:'2-digit'
+});
+
+document.getElementById('startLbl').textContent = fmt(start);
+document.getElementById('endLbl').textContent   = fmt(end);
+
+function tick() {
+  const now = Date.now();
+  let percent;
+
+  if (now <= start) {
+    percent = 0;
+    $status.textContent = "Ещё не началось";
+    $status.className = "status wait";
+  } else if (now >= end) {
+    percent = 100;
+    $status.textContent = "Завершено";
+    $status.className = "status done";
+  } else {
+    percent = ((now - start) / total) * 100;
+    const left = end - now;
+    const d = Math.floor(left / 86400000);
+    const h = Math.floor(left % 86400000 / 3600000);
+    const m = Math.floor(left % 3600000 / 60000);
+    const s = Math.floor(left % 60000 / 1000);
+    let out = [];
+    if (d) out.push(d + 'д');
+    out.push(h + 'ч', m + 'м', s + 'с');
+    $status.textContent = "Осталось: " + out.join(' ');
+    $status.className = "status";
+  }
+
+  // округление до сотых
+  const rounded = Math.floor(percent * 100) / 100;
+
+  $fill.style.width = rounded + '%';
+  $pct.textContent  = rounded.toFixed(2) + '%';
+}
+
+tick();
+setInterval(tick, 50); // 20 раз в секунду — плавно и точно
+</script>
+</body>
+</html>
